@@ -258,7 +258,13 @@ class OptimizationExecutor:
     # Utilities ---------------------------------------------------------
 
     def _build_signal_config(self, parameters: Mapping[str, Any]) -> SignalConfig:
-        descriptor = self.signal_factory.create(parameters)
+        factory = self.signal_factory
+        if hasattr(factory, "create") and callable(getattr(factory, "create")):
+            descriptor = factory.create(parameters)
+        elif callable(factory):
+            descriptor = factory(parameters)
+        else:
+            raise TypeError("signal_factory must be callable or expose a create(parameters) method")
         if isinstance(descriptor, SignalConfig):
             return descriptor
         if isinstance(descriptor, BaseSignal):

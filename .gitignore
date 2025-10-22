@@ -138,6 +138,16 @@ data/
 *.pickle
 *.joblib
 
+# Test results and optimization outputs
+output/
+*.log
+results.json
+results.csv
+results_table.csv
+summary.json
+checkpoints/
+*.tmp
+
 # IDE
 .vscode/
 .idea/
