@@ -133,6 +133,10 @@ class BacktestEngine:
             "n_trades": len(self.trades),
             "win_rate": self.metrics_calculator.win_rate(self.trades),
             "profit_factor": self.metrics_calculator.profit_factor(self.trades),
+            # Wave-based metrics between signal flips
+            "waves_count": self.metrics_calculator.waves_count(df["CLOSE"], signals_series),
+            "mean_wave_mfe": self.metrics_calculator.mean_wave_mfe(df["CLOSE"], signals_series),
+            "mean_wave_mfe_ratio": self.metrics_calculator.mean_wave_mfe_ratio(df["CLOSE"], signals_series),
             "equity": self.equity_curve,
             "trades": self.trades,
         }
@@ -167,4 +171,3 @@ class BacktestEngine:
             raise ValueError("signals must contain only -1, 0, or 1 values (after normalisation)")
 
         return normalised_series.astype(int)
-
