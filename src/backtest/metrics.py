@@ -70,6 +70,69 @@ class MetricsCalculator:
             return 0.0
         return np.sqrt(self.periods_per_year) * ret_series.mean() / downside_std
 
+    def area_ab(self, equity: pd.Series | Sequence[float] | np.ndarray) -> float:
+        """
+        Return the normalised absolute area between the equity curve and the straight line that connects its endpoints.
+        """
+        cleaned = self._validate_equity(equity)
+        if cleaned is None or len(cleaned) < 2:
+            return 0.0
+
+        values = cleaned.to_numpy(dtype=float, copy=False)
+        idx = cleaned.index
+
+        times: np.ndarray
+        if isinstance(idx, (pd.DatetimeIndex, pd.TimedeltaIndex)):
+            times = idx.asi8.astype(float) / 1e9
+        else:
+            try:
+                times = idx.to_numpy(dtype=float)
+                if not np.all(np.isfinite(times)):
+                    raise TypeError
+            except (TypeError, ValueError):
+                times = np.arange(len(values), dtype=float)
+
+        if len(times) != len(values):
+            times = np.arange(len(values), dtype=float)
+
+        t0 = float(times[0])
+        tN = float(times[-1])
+        if tN == t0:
+            times = np.linspace(0.0, 1.0, num=len(values))
+            t0 = float(times[0])
+            tN = float(times[-1])
+
+        span = tN - t0
+        equity0 = float(values[0])
+        equityN = float(values[-1])
+
+        if span == 0.0:
+            line = np.linspace(equity0, equityN, num=len(values))
+        else:
+            line = equity0 + (equityN - equity0) * (times - t0) / span
+
+        deviations = values - line
+        abs_dev = np.abs(deviations)
+
+        dt = np.diff(times)
+        if dt.size == 0 or not np.all(np.isfinite(dt)):
+            dt = np.ones(len(values) - 1, dtype=float)
+        total_span = float(dt.sum()) if dt.size else 0.0
+        if total_span == 0.0 and len(values) > 1:
+            dt = np.ones(len(values) - 1, dtype=float)
+            total_span = float(dt.sum())
+
+        raw_area = float(np.sum(0.5 * (abs_dev[1:] + abs_dev[:-1]) * dt)) if dt.size else 0.0
+
+        scale = abs(equity0)
+        if scale == 0.0:
+            scale = abs(equityN)
+        if scale == 0.0:
+            scale = 1.0
+
+        normalised_area = raw_area / (scale * total_span) if total_span > 0.0 else 0.0
+        return normalised_area
+
     @staticmethod
     def count_flips(signals: pd.Series | Sequence[float | int]) -> int:
         """Count the number of times the signal flips from long to short or vice versa."""

@@ -5,6 +5,11 @@
 - Parameter definitions live in `ParameterSpace` (`trend_indicator_module/optimization/parameter_space.py`), while search behaviour is implemented by strategies such as grid and random search (`trend_indicator_module/optimization/strategies`).
 - Results are buffered in-memory via `InMemoryResultsStore` before being exported and checkpointed (`trend_indicator_module/optimization/results_store.py`).
 
+## Metrics
+- **AreaAB**
+  - Смысл: нормированная площадь отклонения equity от прямой A–B, что позволяет сравнивать инструменты с разными ценовыми уровнями.
+  - Интерпретация: чем больше площадь, тем выше неэффективность или волатильность относительно базового тренда.
+
 ## Observed Bottlenecks
 
 1. **Full artifact capture per evaluation**  

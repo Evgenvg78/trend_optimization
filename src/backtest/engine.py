@@ -129,6 +129,7 @@ class BacktestEngine:
             "recovery_factor": self.metrics_calculator.recovery_factor(self.equity_curve),
             "sharpe": self.metrics_calculator.sharpe_ratio(returns),
             "sortino": self.metrics_calculator.sortino_ratio(returns),
+            "area_ab": self.metrics_calculator.area_ab(self.equity_curve),
             "n_flips": self.metrics_calculator.count_flips(signals_series),
             "n_trades": len(self.trades),
             "win_rate": self.metrics_calculator.win_rate(self.trades),

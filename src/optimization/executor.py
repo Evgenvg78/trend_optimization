@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Callable, Iterable, Mapping, Protocol
 import json
 import time
 
-from trend_indicator_module.signals.base_signal import BaseSignal
+from signals.base_signal import BaseSignal
 
 from .parameter_space import ParameterSpace
 from .reporting import OptimizationReporter
