@@ -57,6 +57,7 @@ class OptimizationExecutor:
     results_store: ResultsStoreProtocol
     indicator_builder: Callable[[ "pd.DataFrame", Mapping[str, Any]], "pd.Series"] | None = None
     output_root: Path = Path("output/optimization")
+    persist_results: bool = True
     callbacks: Iterable[Callback] = field(default_factory=tuple)
     per_candidate_timeout: float | None = None
     max_run_time_seconds: float | None = None
@@ -94,13 +95,18 @@ class OptimizationExecutor:
         run_name = run_id or datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         root = Path(output_root) if output_root else self.output_root
         run_dir = root / run_name
-        run_dir.mkdir(parents=True, exist_ok=True)
+        if self.persist_results:
+            run_dir.mkdir(parents=True, exist_ok=True)
+            self._log_path = run_dir / "run.log"
+        else:
+            self._log_path = None
 
-        checkpoint_root = Path(self.checkpoint_dir) if self.checkpoint_dir else (root / "checkpoints")
-        checkpoint_root.mkdir(parents=True, exist_ok=True)
-        self._checkpoint_path = checkpoint_root / f"{run_name}.json"
-
-        self._log_path = run_dir / "run.log"
+        if self.checkpoint_enabled and self.persist_results:
+            checkpoint_root = Path(self.checkpoint_dir) if self.checkpoint_dir else (root / "checkpoints")
+            checkpoint_root.mkdir(parents=True, exist_ok=True)
+            self._checkpoint_path = checkpoint_root / f"{run_name}.json"
+        else:
+            self._checkpoint_path = None
         worker_count = max_workers if max_workers is not None else (self.default_max_workers or 1)
         worker_count = max(1, worker_count)
 
@@ -128,7 +134,9 @@ class OptimizationExecutor:
         status = "completed" if not self._stop_requested else "stopped"
         self._log(f"{status.capitalize()} run '{run_name}' in {duration:.2f} seconds")
 
-        self._export_results(run_dir)
+        if self.persist_results:
+            self._export_results(run_dir)
+
         self._write_checkpoint(force=True)
         return run_dir
 
