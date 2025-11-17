@@ -287,6 +287,8 @@ class MetricsCalculator:
     def mean_wave_mfe_ratio(price: pd.Series, signals: pd.Series) -> float:
         """Return the mean ratio of peak-to-flip (mfe_abs / flip_move)."""
         table = MetricsCalculator._segments_between_flips(price, signals)
+        if table.empty or "mfe_ratio" not in table.columns:
+            return np.nan
         col = table["mfe_ratio"].replace([np.inf, -np.inf], np.nan).dropna()
         return float(col.mean()) if not col.empty else np.nan
 

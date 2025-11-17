@@ -21,6 +21,8 @@ class BacktestEngine:
     initial_capital: float = 100_000.0
     default_n_contracts: int = 1
     metrics_calculator: MetricsCalculator = field(default_factory=MetricsCalculator)
+    # Флаги для отключения дорогих метрик
+    calculate_wave_metrics: bool = True
 
     def __post_init__(self) -> None:
         if self.initial_capital <= 0:
@@ -123,7 +125,7 @@ class BacktestEngine:
         self.equity_curve = pd.Series(equity_values, index=df.index, name="equity")
         returns = self.metrics_calculator.returns(self.equity_curve)
 
-        return {
+        result = {
             "total_return": self.metrics_calculator.total_return(self.equity_curve),
             "max_drawdown": self.metrics_calculator.max_drawdown(self.equity_curve),
             "recovery_factor": self.metrics_calculator.recovery_factor(self.equity_curve),
@@ -134,13 +136,25 @@ class BacktestEngine:
             "n_trades": len(self.trades),
             "win_rate": self.metrics_calculator.win_rate(self.trades),
             "profit_factor": self.metrics_calculator.profit_factor(self.trades),
-            # Wave-based metrics between signal flips
-            "waves_count": self.metrics_calculator.waves_count(df["CLOSE"], signals_series),
-            "mean_wave_mfe": self.metrics_calculator.mean_wave_mfe(df["CLOSE"], signals_series),
-            "mean_wave_mfe_ratio": self.metrics_calculator.mean_wave_mfe_ratio(df["CLOSE"], signals_series),
             "equity": self.equity_curve,
             "trades": self.trades,
         }
+
+        # Wave-based metrics only if enabled (can be expensive/problematic with few trades)
+        if self.calculate_wave_metrics:
+            result.update({
+                "waves_count": self.metrics_calculator.waves_count(df["CLOSE"], signals_series),
+                "mean_wave_mfe": self.metrics_calculator.mean_wave_mfe(df["CLOSE"], signals_series),
+                "mean_wave_mfe_ratio": self.metrics_calculator.mean_wave_mfe_ratio(df["CLOSE"], signals_series),
+            })
+        else:
+            result.update({
+                "waves_count": np.nan,
+                "mean_wave_mfe": np.nan,
+                "mean_wave_mfe_ratio": np.nan,
+            })
+
+        return result
 
     def _get_price(self, df: pd.DataFrame, idx: int, price_type: str) -> float:
         """Return price for trade execution respecting the requested fill type."""
